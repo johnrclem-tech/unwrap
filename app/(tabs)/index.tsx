@@ -6,47 +6,54 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
+  Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ProductCard from '@/components/ProductCard';
-import AddToWishlistModal from '@/components/AddToWishlistModal';
-import { searchProducts } from '@/lib/search';
-import { Product } from '@/types';
+import { useRouter } from 'expo-router';
+import SearchResultCard from '@/components/SearchResultCard';
+import { searchWeb } from '@/lib/search';
+import { SearchResult } from '@/types';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Product[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setError(null);
       return;
     }
     const timer = setTimeout(async () => {
       setLoading(true);
-      const products = await searchProducts(query);
-      setResults(products);
+      setError(null);
+      try {
+        const searchResults = await searchWeb(query);
+        setResults(searchResults);
+      } catch (err: any) {
+        setError(err.message || 'Search failed');
+        setResults([]);
+      }
       setLoading(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [query]);
 
-  const handleAdd = (product: Product) => {
-    setSelectedProduct(product);
-    setModalVisible(true);
-  };
-
-  const handleAdded = () => {
-    setModalVisible(false);
-    setSelectedProduct(null);
+  const handleResultPress = (result: SearchResult) => {
+    const path = `/browser?url=${encodeURIComponent(result.url)}` as any;
+    if (Platform.OS === 'web') {
+      Linking.openURL(result.url);
+    }
+    router.push(path);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.header}>Search Products</Text>
+      <Text style={styles.header}>Search</Text>
       <View style={styles.searchBar}>
         <TextInput
           style={styles.input}
@@ -61,6 +68,10 @@ export default function SearchScreen() {
 
       {loading ? (
         <ActivityIndicator size="large" color="#6c5ce7" style={styles.loader} />
+      ) : error ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       ) : results.length === 0 && query.trim() ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No results found</Text>
@@ -69,27 +80,20 @@ export default function SearchScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔍</Text>
           <Text style={styles.emptyText}>
-            Search for products you'd love to have
+            Search for stores and products
           </Text>
         </View>
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item, index) => `${item.sourceUrl}-${index}`}
+          keyExtractor={(item, index) => `${item.url}-${index}`}
           renderItem={({ item }) => (
-            <ProductCard product={item} onAdd={handleAdd} />
+            <SearchResultCard result={item} onPress={handleResultPress} />
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      <AddToWishlistModal
-        visible={modalVisible}
-        product={selectedProduct}
-        onClose={() => setModalVisible(false)}
-        onAdded={handleAdded}
-      />
     </SafeAreaView>
   );
 }
@@ -141,5 +145,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#e74c3c',
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 });

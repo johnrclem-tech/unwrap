@@ -1,3 +1,11 @@
+export interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  displayUrl: string;
+  imageUrl: string | null;
+}
+
 export interface Product {
   title: string;
   price: string | null;
