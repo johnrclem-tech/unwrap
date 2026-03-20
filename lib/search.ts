@@ -4,6 +4,9 @@ import { SearchResult } from '@/types';
 const cache = new Map<string, { results: SearchResult[]; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 
+// Use relative URL in production (Vercel), absolute URL in local dev
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || '';
+
 export async function searchWeb(queryText: string): Promise<SearchResult[]> {
   const trimmed = queryText.trim();
   if (!trimmed) return [];
@@ -14,7 +17,7 @@ export async function searchWeb(queryText: string): Promise<SearchResult[]> {
     return cached.results;
   }
 
-  const url = `/api/search?q=${encodeURIComponent(trimmed)}`;
+  const url = `${API_BASE}/api/search?q=${encodeURIComponent(trimmed)}`;
   const response = await fetch(url);
 
   if (!response.ok) {
