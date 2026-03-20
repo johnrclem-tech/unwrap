@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SearchResult } from '@/types';
 
 interface SearchResultCardProps {
   result: SearchResult;
   onPress: (result: SearchResult) => void;
+  onAdd: (result: SearchResult) => void;
 }
 
-export default function SearchResultCard({ result, onPress }: SearchResultCardProps) {
+export default function SearchResultCard({ result, onPress, onAdd }: SearchResultCardProps) {
   return (
     <TouchableOpacity style={styles.card} onPress={() => onPress(result)} activeOpacity={0.7}>
       {result.imageUrl && (
@@ -22,6 +24,16 @@ export default function SearchResultCard({ result, onPress }: SearchResultCardPr
           {result.snippet}
         </Text>
       </View>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={(e) => {
+          e.stopPropagation();
+          onAdd(result);
+        }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="add-circle" size={28} color="#6c5ce7" />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -50,6 +62,12 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
     justifyContent: 'center',
+    marginRight: 8,
+  },
+  addButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 4,
   },
   displayUrl: {
     fontSize: 12,

@@ -12,14 +12,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import SearchResultCard from '@/components/SearchResultCard';
+import AddToWishlistModal from '@/components/AddToWishlistModal';
 import { searchWeb } from '@/lib/search';
-import { SearchResult } from '@/types';
+import { SearchResult, Product } from '@/types';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,11 +47,23 @@ export default function SearchScreen() {
   }, [query]);
 
   const handleResultPress = (result: SearchResult) => {
-    const path = `/browser?url=${encodeURIComponent(result.url)}` as any;
     if (Platform.OS === 'web') {
       Linking.openURL(result.url);
+    } else {
+      router.push(`/browser?url=${encodeURIComponent(result.url)}` as any);
     }
-    router.push(path);
+  };
+
+  const handleAddFromSearch = (result: SearchResult) => {
+    const product: Product = {
+      title: result.title,
+      price: null,
+      imageUrl: result.imageUrl,
+      sourceUrl: result.url,
+      sourceName: result.displayUrl,
+    };
+    setSelectedProduct(product);
+    setShowAddModal(true);
   };
 
   return (
@@ -88,10 +103,21 @@ export default function SearchScreen() {
           data={results}
           keyExtractor={(item, index) => `${item.url}-${index}`}
           renderItem={({ item }) => (
-            <SearchResultCard result={item} onPress={handleResultPress} />
+            <SearchResultCard result={item} onPress={handleResultPress} onAdd={handleAddFromSearch} />
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {selectedProduct && (
+        <AddToWishlistModal
+          visible={showAddModal}
+          product={selectedProduct}
+          onClose={() => {
+            setShowAddModal(false);
+            setSelectedProduct(null);
+          }}
         />
       )}
     </SafeAreaView>
