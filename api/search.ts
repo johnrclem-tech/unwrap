@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID;
+const SERPER_API_KEY = process.env.SERPER_API_KEY;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const q = req.query.q;
@@ -14,33 +13,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ results: [] });
   }
 
-  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
-    return res.status(500).json({ error: 'Google API credentials not configured' });
+  if (!SERPER_API_KEY) {
+    return res.status(500).json({ error: 'Serper API key not configured' });
   }
 
   try {
-    const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(trimmed)}&num=10`;
-    const response = await fetch(url);
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ q: trimmed, num: 10 }),
+    });
+
     const data = await response.json();
 
     if (!response.ok) {
-      const msg = data?.error?.message || 'Google search request failed';
+      const msg = data?.message || 'Search request failed';
       return res.status(response.status).json({ error: msg });
     }
 
-    const results = (data.items || []).map((item: any) => {
-      let imageUrl: string | null = null;
-      if (item.pagemap?.cse_image?.[0]?.src) {
-        imageUrl = item.pagemap.cse_image[0].src;
-      } else if (item.pagemap?.cse_thumbnail?.[0]?.src) {
-        imageUrl = item.pagemap.cse_thumbnail[0].src;
-      }
-
+    const results = (data.organic || []).map((item: any) => {
       let displayUrl: string;
       try {
         displayUrl = new URL(item.link).hostname;
       } catch {
-        displayUrl = item.displayLink || item.link;
+        displayUrl = item.link;
       }
 
       return {
@@ -48,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         url: item.link,
         snippet: item.snippet || '',
         displayUrl,
-        imageUrl,
+        imageUrl: item.imageUrl || item.thumbnail || null,
       };
     });
 
