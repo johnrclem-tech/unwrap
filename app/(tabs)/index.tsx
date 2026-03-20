@@ -43,11 +43,7 @@ export default function SearchScreen() {
 
   const handleBrowseSite = () => {
     const url = normalizeUrl(query);
-    if (Platform.OS === 'web') {
-      Linking.openURL(url);
-    } else {
-      router.push(`/browser?url=${encodeURIComponent(url)}` as any);
-    }
+    router.push(`/browser?url=${encodeURIComponent(url)}` as any);
   };
 
   useEffect(() => {
@@ -72,11 +68,7 @@ export default function SearchScreen() {
   }, [query]);
 
   const handleResultPress = (result: SearchResult) => {
-    if (Platform.OS === 'web') {
-      Linking.openURL(result.url);
-    } else {
-      router.push(`/browser?url=${encodeURIComponent(result.url)}` as any);
-    }
+    router.push(`/browser?url=${encodeURIComponent(result.url)}` as any);
   };
 
   const handleAddFromSearch = (result: SearchResult) => {

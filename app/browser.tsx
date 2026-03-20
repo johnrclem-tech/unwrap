@@ -58,44 +58,34 @@ export default function BrowserScreen() {
     setModalVisible(true);
   };
 
-  // Web fallback: open URL in new tab and show paste input
+  // Web: embed the site in an iframe for a native-like experience
   if (Platform.OS === 'web') {
-    // Open the URL in a new tab on mount
-    if (url) {
-      Linking.openURL(url);
-    }
-
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add to Wishlist</Text>
-          <View style={{ width: 50 }} />
-        </View>
-
-        <View style={styles.webFallback}>
-          <Text style={styles.webFallbackText}>
-            The site opened in a new tab. Browse it, copy a product URL, and paste it below to add to your wishlist.
+          <Text style={styles.urlText} numberOfLines={1}>
+            {currentUrl}
           </Text>
-          <TextInput
-            style={styles.pasteInput}
-            placeholder="Paste product URL here..."
-            placeholderTextColor="#aaa"
-            value={pasteUrl}
-            onChangeText={setPasteUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TouchableOpacity
-            style={[styles.addButton, !pasteUrl.trim() && styles.addButtonDisabled]}
-            onPress={handlePasteAdd}
-            disabled={!pasteUrl.trim()}
-          >
-            <Text style={styles.addButtonText}>Add to Wishlist</Text>
+          <TouchableOpacity onPress={handleAddToWishlist} style={styles.addWishlistBtn}>
+            <Text style={styles.addWishlistText}>+ Add</Text>
           </TouchableOpacity>
         </View>
+
+        {url ? (
+          <iframe
+            src={url}
+            style={{ flex: 1, border: 'none', width: '100%', height: '100%' } as any}
+            title="Browser"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        ) : (
+          <View style={styles.webFallback}>
+            <Text style={styles.webFallbackText}>No URL provided</Text>
+          </View>
+        )}
 
         <AddToWishlistModal
           visible={modalVisible}
@@ -104,7 +94,6 @@ export default function BrowserScreen() {
           onAdded={() => {
             setModalVisible(false);
             setSelectedProduct(null);
-            setPasteUrl('');
           }}
         />
       </SafeAreaView>
