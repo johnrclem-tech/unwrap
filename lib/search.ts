@@ -4,8 +4,8 @@ import { SearchResult } from '@/types';
 const cache = new Map<string, { results: SearchResult[]; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 
-// Use env var if set, otherwise default to production Vercel URL
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://unwrap-psi.vercel.app';
+// Always call the production Vercel API for search (local dev has no API routes)
+const API_BASE = 'https://unwrap-psi.vercel.app';
 
 export async function searchWeb(queryText: string): Promise<SearchResult[]> {
   const trimmed = queryText.trim();
