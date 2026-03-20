@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
+  TouchableOpacity,
   Platform,
   Linking,
 } from 'react-native';
@@ -16,6 +17,19 @@ import AddToWishlistModal from '@/components/AddToWishlistModal';
 import { searchWeb } from '@/lib/search';
 import { SearchResult, Product } from '@/types';
 
+const looksLikeUrl = (text: string): boolean => {
+  const trimmed = text.trim();
+  if (trimmed.includes(' ')) return false;
+  // Matches "example.com", "www.example.com", "https://example.com", etc.
+  return /^(https?:\/\/)?[\w-]+(\.[\w-]+)+/.test(trimmed);
+};
+
+const normalizeUrl = (text: string): string => {
+  const trimmed = text.trim();
+  if (/^https?:\/\//.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -24,6 +38,17 @@ export default function SearchScreen() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const router = useRouter();
+
+  const isUrl = looksLikeUrl(query);
+
+  const handleBrowseSite = () => {
+    const url = normalizeUrl(query);
+    if (Platform.OS === 'web') {
+      Linking.openURL(url);
+    } else {
+      router.push(`/browser?url=${encodeURIComponent(url)}` as any);
+    }
+  };
 
   useEffect(() => {
     if (!query.trim()) {
@@ -80,6 +105,13 @@ export default function SearchScreen() {
           clearButtonMode="while-editing"
         />
       </View>
+
+      {isUrl && (
+        <TouchableOpacity style={styles.browseBanner} onPress={handleBrowseSite}>
+          <Text style={styles.browseBannerText}>Browse {query.trim()}</Text>
+          <Text style={styles.browseBannerArrow}>→</Text>
+        </TouchableOpacity>
+      )}
 
       {loading ? (
         <ActivityIndicator size="large" color="#6c5ce7" style={styles.loader} />
@@ -177,5 +209,28 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  browseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#6c5ce7',
+    borderRadius: 12,
+  },
+  browseBannerText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+  },
+  browseBannerArrow: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: 8,
   },
 });
